@@ -1,19 +1,16 @@
 using Domain.Professors;
-using SharedKernel.Domain.Entities;
 
 namespace Domain.Lectures;
 
-public class Lecture : EntityBase
+public class Lecture
 {
+    public Guid Id { get; private set; }
     public string Name { get; private set; }
-    public List<Professor> Professors { get; set; }
-
-    private Lecture()
-    {
-    }
+    public List<Professor>? Professors { get; set; }
 
     private Lecture(string name)
     {
+        Id = Guid.NewGuid();
         Name = name ?? throw new ArgumentNullException(nameof(name));
     }
 

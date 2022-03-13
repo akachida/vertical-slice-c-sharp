@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using SharedKernel.ValueObjects;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Application.IntegrationTest.Home.Query;
 
@@ -25,11 +26,21 @@ public sealed class GetUserInfoQueryTest
     {
         // arrange
         var mapper = _testBase.ServiceProvider.GetService<IMapper>();
+
+        if (_testBase.Context is null)
+            throw new NullException(_testBase);
+
+        if (mapper is null)
+            throw new NullException(mapper);
+
         var handler = new GetUserInfoQueryHandler(_testBase.Context, mapper);
         var username = new Email("admin@test.com");
         var firstUser = await _testBase.Context.Users
             .FirstOrDefaultAsync(x => x.Username == username)
             .ConfigureAwait(false);
+
+        if (firstUser is null)
+            throw new NullException(firstUser);
 
         // act
         var query = new GetUserInfoQuery
@@ -56,6 +67,13 @@ public sealed class GetUserInfoQueryTest
     {
         // arrange
         var mapper = _testBase.ServiceProvider.GetService<IMapper>();
+
+        if (_testBase.Context is null)
+            throw new NullException(_testBase);
+
+        if (mapper is null)
+            throw new NullException(mapper);
+
         var handler = new GetUserInfoQueryHandler(_testBase.Context, mapper);
 
         // act & assert
@@ -72,6 +90,13 @@ public sealed class GetUserInfoQueryTest
     {
         // arrange
         var mapper = _testBase.ServiceProvider.GetService<IMapper>();
+
+        if (_testBase.Context is null)
+            throw new NullException(_testBase);
+
+        if (mapper is null)
+            throw new NullException(mapper);
+
         var handler = new GetUserInfoQueryHandler(_testBase.Context, mapper);
 
         // act & assert

@@ -8,8 +8,8 @@ namespace Application.Home.Query;
 
 public sealed record GetUserInfoResponse
 {
-    public string FirstName { get; init; }
-    public string LastName { get; init; }
+    public string? FirstName { get; init; }
+    public string? LastName { get; init; }
 }
 
 public sealed record GetUserInfoQuery : IRequest<GetUserInfoResponse>

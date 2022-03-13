@@ -1,21 +1,17 @@
-using SharedKernel.Domain.Entities;
 using SharedKernel.Domain.Enumerations.Users;
 using SharedKernel.ValueObjects;
 
 namespace Domain.Users;
 
-public class User : EntityBase
+public class User
 {
+    public Guid Id { get; private set; }
     public Email Username { get; private set; }
     public string Password { get; private set; }
     public string FirstName { get; private set; }
     public string LastName { get; private set; }
     public UserType Type { get; private set; }
     public UserLevel Level { get; private set; }
-
-    private User()
-    {
-    }
 
     private User(Email username, string password, string firstName, string lastName, UserType type,
         UserLevel level)

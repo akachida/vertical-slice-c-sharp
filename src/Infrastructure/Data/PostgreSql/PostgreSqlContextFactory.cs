@@ -13,7 +13,7 @@ public sealed class PostgreSqlContextFactory
     }
 
     public ApplicationContext Create(
-        Action<DbContextOptionsBuilder<ApplicationContext>> actionBuilder = default)
+        Action<DbContextOptionsBuilder<ApplicationContext>>? actionBuilder = default)
     {
         var builder = new DbContextOptionsBuilder<ApplicationContext>(
             new DbContextOptions<ApplicationContext>());
