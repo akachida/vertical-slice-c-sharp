@@ -14,7 +14,9 @@ internal static class RestApiStartup
 {
     public static void AddMyRestApi(this IServiceCollection service)
     {
-        service.AddMediatR(Assembly.Load("Application"), Assembly.Load("WebApi"));
+        service.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(
+            Assembly.Load("Application"), 
+            Assembly.Load("WebApi")));
 
         service.AddValidatorsFromAssemblies(new []
         {
@@ -32,17 +34,10 @@ internal static class RestApiStartup
             {
                 options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                 options.JsonSerializerOptions.Converters.Add(new DateTimeConverter());
-            })
-            .AddFluentValidation(options =>
-            {
-                options.RegisterValidatorsFromAssemblies(new []
-                {
-                    Assembly.Load("Application"),
-                    Assembly.Load("WebApi")
-                });
-
-                options.ValidatorFactoryType = typeof(HttpContextServiceProviderValidatorFactory);
             });
+
+        service.AddFluentValidationAutoValidation()
+               .AddFluentValidationClientsideAdapters();
     }
 
     public static void UseMyRestApi(this IApplicationBuilder app, IHostEnvironment environment)

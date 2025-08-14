@@ -33,3 +33,6 @@ app.UseMyRequestLogging();
 app.UseMyRestApi(builder.Environment);
 
 app.Run();
+
+// Make Program class accessible for WebApplicationFactory in integration tests
+public partial class Program { }

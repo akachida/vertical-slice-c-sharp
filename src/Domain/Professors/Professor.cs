@@ -7,18 +7,27 @@ namespace Domain.Professors;
 public class Professor
 {
     public Guid Id { get; private set; }
+    public Guid UserId { get; private set; }
     public List<Student>? Students { get; private set; }
     public List<Lecture>? Lectures { get; private set; }
-    public User User { get; private set; }
+    public User User { get; private set; } = null!;
 
-    private Professor(User user)
+    // Parameterless constructor for EF Core
+    private Professor()
     {
-        Id = Guid.NewGuid();
-        User = user ?? throw new ArgumentNullException(nameof(user));
     }
 
-    public Professor Create(User user)
+    private Professor(Guid userId)
     {
-        return new Professor(user);
+        Id = Guid.NewGuid();
+        UserId = userId;
+    }
+
+    public static Professor Create(User user)
+    {
+        if (user == null)
+            throw new ArgumentNullException(nameof(user));
+            
+        return new Professor(user.Id);
     }
 }

@@ -3,6 +3,7 @@ using Infrastructure.Data;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Helpers;
+using SharedKernel.Domain;
 
 namespace Application.Home.Query;
 
@@ -12,12 +13,12 @@ public sealed record GetUserInfoResponse
     public string? LastName { get; init; }
 }
 
-public sealed record GetUserInfoQuery : IRequest<GetUserInfoResponse>
+public sealed record GetUserInfoQuery : IRequest<Result<GetUserInfoResponse>>
 {
     public Guid UserId { get; init; }
 }
 
-public class GetUserInfoQueryHandler : IRequestHandler<GetUserInfoQuery, GetUserInfoResponse>
+public class GetUserInfoQueryHandler : IRequestHandler<GetUserInfoQuery, Result<GetUserInfoResponse>>
 {
     private readonly ApplicationContext _context;
     private readonly IMapper _mapper;
@@ -28,19 +29,21 @@ public class GetUserInfoQueryHandler : IRequestHandler<GetUserInfoQuery, GetUser
         _mapper = mapper;
     }
 
-    public async Task<GetUserInfoResponse> Handle(
+    public async Task<Result<GetUserInfoResponse>> Handle(
         GetUserInfoQuery request,
         CancellationToken token)
     {
         if (request.UserId.IsDefault())
-            throw new Exception("UserId should not be null or empty");
+            return Result.Failure<GetUserInfoResponse>("UserId cannot be empty");
 
-        var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == request.UserId, token)
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Id == request.UserId, token)
             .ConfigureAwait(false);
 
         if (user is null || user.IsDefault())
-            throw new Exception("UserId not found on the system"); // or could be a domain validator
+            return Result.Failure<GetUserInfoResponse>("User not found");
 
-        return _mapper.Map<GetUserInfoResponse>(user);
+        var response = _mapper.Map<GetUserInfoResponse>(user);
+        return Result.Success(response);
     }
 }
