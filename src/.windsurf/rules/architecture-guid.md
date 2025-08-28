@@ -7,7 +7,7 @@ globs:
 # AI Architecture Guide: Vertical Slice Clean Architecture
 
 ## Overview
-This codebase implements **Clean Architecture** with **Vertical Slice** organization using .NET 6, focusing on maintainability, testability, and feature-based development.
+This codebase implements **Clean Architecture** with **Vertical Slice** organization using .NET 9, focusing on maintainability, testability, and feature-based development with **Minimal APIs**.
 
 ## Core Architecture Principles
 
@@ -81,13 +81,14 @@ public class GetUserInfoQueryHandler : IRequestHandler<GetUserInfoQuery, Result<
 - No business logic
 
 ### WebApi Layer (`WebApi/`)
-**Purpose:** REST API endpoints and presentation
-**Organization:** Feature-based controllers
+**Purpose:** REST API endpoints and presentation using Minimal APIs
+**Organization:** Feature-based endpoint groups
 **Rules:**
-- Minimal controllers (delegate to MediatR)
-- Use API versioning
+- Use Minimal APIs with MapGroup for organization
+- Delegate to MediatR handlers
+- Use TypedResults for better testability and OpenAPI metadata
+- API versioning with endpoint groups
 - Swagger documentation
-- Modular startup configuration
 
 ### SharedKernel (`SharedKernel/`)
 **Purpose:** Common domain primitives
@@ -116,10 +117,11 @@ public class GetUserInfoQueryHandler : IRequestHandler<GetUserInfoQuery, Result<
    - Add EF Core entity configuration
    - Update ApplicationContext if needed
 
-4. **WebApi:**
-   - Create feature controller
-   - Use [ApiVersion] attributes
-   - Delegate to MediatR handlers
+4. **WebApi (Minimal APIs):**
+   - Create endpoint group using MapGroup
+   - Define endpoint handlers that delegate to MediatR
+   - Use TypedResults for responses
+   - Apply versioning and authentication as needed
 
 ### Code Standards
 
@@ -138,43 +140,108 @@ public class EntityName
 }
 ```
 
-**Controller Pattern:**
+**Minimal API Endpoint Pattern:**
 ```csharp
-[ApiController]
-[ApiVersion("1.0")]
-[Route("api/v{version:apiVersion}/[controller]")]
-public class FeatureController : ControllerBase
+// Program.cs or separate endpoint configuration
+var app = builder.Build();
+
+// Group related endpoints
+var userEndpoints = app.MapGroup("/api/v1/users")
+    .WithTags("Users")
+    .WithOpenApi();
+
+// Define endpoints with handler methods
+userEndpoints.MapGet("/{id}", GetUser);
+userEndpoints.MapPost("/", CreateUser);
+userEndpoints.MapPut("/{id}", UpdateUser);
+userEndpoints.MapDelete("/{id}", DeleteUser);
+
+// Endpoint handler methods
+static async Task<IResult> GetUser(Guid id, IMediator mediator)
 {
-    private readonly IMediator _mediator;
+    var query = new GetUserQuery { Id = id };
+    var result = await mediator.Send(query);
     
-    [HttpGet("{id}")]
-    public async Task<ActionResult<ResponseDto>> Get(Guid id)
+    return result.IsSuccess 
+        ? TypedResults.Ok(result.Value) 
+        : TypedResults.BadRequest(new { Error = result.Error });
+}
+
+static async Task<IResult> CreateUser(CreateUserRequest request, IMediator mediator)
+{
+    var command = new CreateUserCommand { /* map from request */ };
+    var result = await mediator.Send(command);
+    
+    return result.IsSuccess
+        ? TypedResults.Created($"/api/v1/users/{result.Value.Id}", result.Value)
+        : TypedResults.BadRequest(new { Error = result.Error });
+}
+```
+
+**Advanced Endpoint Organization:**
+```csharp
+// Feature-based endpoint extensions
+public static class UserEndpoints
+{
+    public static RouteGroupBuilder MapUserEndpoints(this RouteGroupBuilder group)
     {
-        var query = new GetQuery { Id = id };
-        var result = await _mediator.Send(query);
-        return result.IsSuccess ? Ok(result.Value) : BadRequest(new { Error = result.Error });
+        group.MapGet("/{id}", GetUser)
+            .WithName("GetUser")
+            .WithSummary("Get user by ID")
+            .Produces<GetUserResponse>()
+            .ProducesProblem(404);
+            
+        group.MapPost("/", CreateUser)
+            .WithName("CreateUser")
+            .WithSummary("Create a new user")
+            .Accepts<CreateUserRequest>("application/json")
+            .Produces<CreateUserResponse>(201)
+            .ProducesValidationProblem();
+            
+        return group;
+    }
+    
+    private static async Task<IResult> GetUser(Guid id, IMediator mediator)
+    {
+        // Implementation
+    }
+    
+    private static async Task<IResult> CreateUser(CreateUserRequest request, IMediator mediator)
+    {
+        // Implementation
     }
 }
+
+// Usage in Program.cs
+app.MapGroup("/api/v1/users")
+   .WithTags("Users")
+   .MapUserEndpoints();
 ```
 
 ## Key Technologies & Patterns
 
 **Core Stack:**
-- .NET 6 with nullable reference types
-- ASP.NET Core Web API
-- Entity Framework Core 6.0.3
+- .NET 9 with nullable reference types
+- ASP.NET Core Minimal APIs
+- Entity Framework Core 9.0
 - PostgreSQL (Npgsql provider)
 
 **Architecture Patterns:**
-- MediatR 10.0.1 for CQRS
-- AutoMapper 11.0.1 for mapping
-- FluentValidation 10.4.0 for validation
+- MediatR 12.0+ for CQRS
+- AutoMapper 12.0+ for mapping
 
 **Infrastructure:**
 - Serilog for structured logging
-- Swagger/OpenAPI documentation
+- Swagger/OpenAPI documentation with TypedResults
 - Health checks and monitoring
-- API versioning support
+- API versioning with endpoint groups
+
+**Minimal API Features (.NET 9):**
+- MapGroup for endpoint organization
+- TypedResults for better testability and OpenAPI metadata
+- Built-in parameter binding and validation
+- Endpoint filters for cross-cutting concerns
+- Rate limiting and authentication integration
 
 ## Result Pattern Implementation
 
@@ -227,10 +294,17 @@ public async Task<Result<GetUserInfoResponse>> Handle(GetUserInfoQuery request, 
 }
 ```
 
-**Controller Responses:**
+**Minimal API Responses:**
 ```csharp
-var result = await _mediator.Send(query);
-return result.IsSuccess ? Ok(result.Value) : BadRequest(new { Error = result.Error });
+static async Task<IResult> GetUser(Guid id, IMediator mediator)
+{
+    var query = new GetUserQuery { Id = id };
+    var result = await mediator.Send(query);
+    
+    return result.IsSuccess 
+        ? TypedResults.Ok(result.Value) 
+        : TypedResults.BadRequest(new { Error = result.Error });
+}
 ```
 
 ### Extension Methods
@@ -255,5 +329,33 @@ Available in `SharedKernel/Extensions/ResultExtensions.cs`:
 3. **Make Error Messages User-Friendly** - Clear, actionable error descriptions
 4. **Chain Operations** - Use Map and Bind for fluent operation chaining
 5. **Consistent Return Types** - Always return Result from domain operations
+6. **Use TypedResults in Minimal APIs** - Better testability and OpenAPI documentation
 
-This architecture promotes maintainable, testable, and scalable applications through clear separation of concerns and established patterns.
+## Minimal API Best Practices (.NET 9)
+
+### Endpoint Organization
+- Use `MapGroup` to organize related endpoints
+- Apply common configuration (authentication, versioning, tags) at the group level
+- Separate endpoint definitions into extension methods for better organization
+
+### Response Types
+- Prefer `TypedResults` over `Results` for better compile-time safety
+- Use appropriate HTTP status codes with TypedResults methods
+- Include OpenAPI metadata with `WithSummary`, `WithDescription`, `Produces`, etc.
+
+### Parameter Binding
+- Leverage automatic parameter binding for simple types
+- Use `[FromBody]`, `[FromRoute]`, `[FromQuery]` attributes when needed
+- Validate input using FluentValidation or built-in validation attributes
+
+### Error Handling
+- Use Result pattern for business logic errors
+- Return appropriate HTTP status codes based on error types
+- Provide consistent error response format across all endpoints
+
+### Performance
+- Use `IAsyncEnumerable<T>` for streaming responses when appropriate
+- Implement proper cancellation token support
+- Consider endpoint filters for cross-cutting concerns instead of middleware when possible
+
+This architecture promotes maintainable, testable, and scalable applications through clear separation of concerns and established patterns, now leveraging the power and simplicity of .NET 9 Minimal APIs.
