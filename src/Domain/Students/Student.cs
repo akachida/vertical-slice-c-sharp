@@ -20,11 +20,12 @@ public class Student
     {
     }
 
-    private Student(Guid userId)
+    private Student(User user)
     {
         Id = Guid.NewGuid();
         Grade = 0;
-        UserId = userId;
+        UserId = user.Id;
+        User = user;
     }
 
     public static Result<Student> Create(User user)
@@ -32,7 +33,7 @@ public class Student
         if (user == null)
             return Result.Failure<Student>("User cannot be null");
 
-        return Result.Success(new Student(user.Id));
+        return Result.Success(new Student(user));
     }
 
     public Result UpdateGrade(double newGrade)

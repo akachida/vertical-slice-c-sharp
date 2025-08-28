@@ -52,9 +52,10 @@ This document outlines the rules and patterns for generating unit and integratio
    * Use descriptive action names that explain business intent.
 
    **5.2 Domain Layer**
-   * **Happy Path**: `{DomainMethodName}` (exact method name from domain, converted to PascalCase).
-   * **Exception Tests**: `{MethodName}_ShouldThrow_When_{specific_condition_in_PascalCase}`.
-   * Be specific about the failure condition.
+   * **Happy Path**: `{DomainMethodName}` (exact method name from domain)
+   * **Exception Tests**: `{MethodName}_throw_exception_when_{specific_condition}`
+   * **Use snake_case for condition descriptions**
+   * **Be specific about the failure condition**
 
 **Example Domain Unit Test Structure**:
 
@@ -63,7 +64,7 @@ This document outlines the rules and patterns for generating unit and integratio
 public class UserTests
 {
     [Fact]
-    public void Activate() // Happy Path: Matches the domain method name
+    public void activate() // Happy Path: Matches the domain method name
     {
         // Arrange
         var inactiveUser = UserFixture.AnInactiveUser();
@@ -77,7 +78,7 @@ public class UserTests
     }
 
     [Fact]
-    public void Activate_ShouldThrow_WhenUserIsAlreadyActive() // Exception Path
+    public void activate_throw_exception_when_user_is_already_active() // Exception Path
     {
         // Arrange
         var activeUser = UserFixture.ADefaultActiveUser();
@@ -108,7 +109,7 @@ public class UserTests
    * Replace the real services with your mocks in the DI container by configuring the `WebApplicationFactory`'s services.
 3. **Structure and Naming**:
    * Follow the `Arrange-Act-Assert` structure.
-   * Follow the `{MethodName}_Should_{ExpectedBehavior}_When_{Context}` naming convention.
+   * Follow the naming convention from the Application Layer rules (e.g., `Handle_{action_description_in_snake_case}`).
 4. **Stubbing and Verification**:
    * Use Moq's `Setup(...).ReturnsAsync(...)` to stub the behavior of mocked dependencies in the **Arrange** block.
    * Use Moq's `Verify(...)` to check for correct interactions with mocks in the **Assert** block.
@@ -143,7 +144,7 @@ public class UserServiceTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task CreateUser_Should_ReturnUserDto_WhenRequestIsValid()
+    public async Task handle_create_user_with_valid_request()
     {
         // Arrange
         var request = CreateUserRequestFixture.ADefaultRequest();

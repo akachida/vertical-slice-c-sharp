@@ -28,7 +28,6 @@ public class User
     public static User Create(string username, string password, string firstName, string lastName,
         UserType type, UserLevel level)
     {
-
         if (string.IsNullOrEmpty(username))
             throw new Exception("Username should not be null");
 

@@ -8,9 +8,6 @@ namespace Application.IntegrationTest.Common;
 
 public class IntegrationTestBase : IDisposable
 {
-    private readonly string _connectionString =
-        "User ID=postgres;Password=root;Host=localhost;Port=5432;Database=test;Pooling=true;";
-
     public readonly ApplicationContext? Context;
     public readonly ServiceProvider ServiceProvider;
 
@@ -20,16 +17,9 @@ public class IntegrationTestBase : IDisposable
 
         var serviceCollection = new ServiceCollection();
         serviceCollection
-            .AddEntityFrameworkNpgsql()
             .AddDbContext<ApplicationContext>(builder =>
             {
-                builder.UseNpgsql(
-                    _connectionString,
-                    optionsBuilder =>
-                    {
-                        optionsBuilder.EnableRetryOnFailure(10, TimeSpan.FromSeconds(30), null);
-                        optionsBuilder.MigrationsAssembly(typeof(ApplicationContext).Assembly.FullName);
-                    })
+                builder.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
                     .EnableSensitiveDataLogging();
             });
 
